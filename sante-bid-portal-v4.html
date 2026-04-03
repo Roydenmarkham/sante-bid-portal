@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Santé · Bid Analysis Portal</title>
+<style>
+:root {
+  --bg: #ffffff; --bg2: #f5f4f0; --bg3: #eeedea;
+  --text: #1a1a18; --text2: #5f5e5a; --text3: #9c9a92;
+  --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+  --blue: #185FA5; --blue-bg: #E6F1FB; --blue-text: #0C447C;
+  --green: #3B6D11; --green-bg: #EAF3DE; --green-text: #27500A;
+  --amber: #854F0B; --amber-bg: #FAEEDA; --amber-text: #633806;
+  --red: #A32D2D; --red-bg: #FCEBEB; --red-text: #791F1F;
+  --teal: #0F6E56; --teal-bg: #E1F5EE; --teal-text: #085041;
+  --radius: 8px; --radius-lg: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1a18; --bg2: #252523; --bg3: #2c2c2a;
+    --text: #e8e6de; --text2: #9c9a92; --text3: #5f5e5a;
+    --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+    --blue-bg: #042C53; --blue-text: #85B7EB;
+    --green-bg: #173404; --green-text: #97C459;
+    --amber-bg: #412402; --amber-text: #FAC775;
+    --red-bg: #501313; --red-text: #F09595;
+    --teal-bg: #04342C; --teal-text: #5DCAA5;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; }
+input, select, textarea, button { font-family: inherit; font-size: 13px; }
+
+/* Layout */
+.app { max-width: 1100px; margin: 0 auto; padding: 20px 16px; }
+.topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.logo { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: 0.04em; }
+.logo span { color: var(--text3); font-weight: 400; }
+
+/* API Key setup */
+#key-setup { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+.key-title { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+.key-desc { font-size: 13px; color: var(--text2); margin-bottom: 14px; line-height: 1.6; }
+.key-row { display: flex; gap: 8px; }
+.key-input { flex: 1; padding: 8px 12px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); outline: none; font-family: monospace; }
+.key-input:focus { border-color: var(--blue); }
+.btn { padding: 8px 16px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 500; transition: all 0.12s; }
+.btn:hover { background: var(--bg2); }
+.btn-primary { background: var(--blue); color: #E6F1FB; border-color: var(--blue); }
+.btn-primary:hover { background: #0C447C; }
+.btn-sm { padding: 5px 10px; font-size: 11px; }
+
+/* Card */
+.card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 18px; margin-bottom: 14px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.card-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.section-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+
+/* Intake form */
+.intake-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; position: relative; }
+.field label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; }
+.combo-wrap { position: relative; }
+.combo-input { width: 100%; padding: 7px 28px 7px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); outline: none; }
+.combo-input:focus { border-color: var(--blue); background: var(--bg); }
+.combo-arrow { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--text3); pointer-events: none; }
+.dd { display: none; position: absolute; top: calc(100% + 3px); left: 0; right: 0; background: var(--bg); border: 0.5px solid var(--border2); border-radius: var(--radius); z-index: 200; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.12); max-height: 200px; overflow-y: auto; }
+.dd.open { display: block; }
+.dd-item { padding: 8px 12px; font-size: 13px; cursor: pointer; color: var(--text); }
+.dd-item:hover { background: var(--bg2); }
+.dd-item.new { color: var(--blue); font-weight: 500; border-top: 0.5px solid var(--border); }
+.chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; background: var(--bg2); border: 0.5px solid var(--border); border-radius: 20px; font-size: 11px; margin-top: 4px; }
+.chip.isnew { background: var(--blue-bg); border-color: #B5D4F4; color: var(--blue-text); }
+.chip-x { cursor: pointer; opacity: 0.6; }
+.chip-x:hover { opacity: 1; }
+
+/* Trade pills */
+.trade-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.trade-pill { padding: 5px 12px; border-radius: 20px; border: 0.5px solid var(--border2); background: var(--bg2); font-size: 12px; color: var(--text2); cursor: pointer; transition: all 0.1s; }
+.trade-pill:hover { color: var(--blue); border-color: var(--blue); }
+.trade-pill.active { background: var(--blue); border-color: var(--blue); color: #E6F1FB; }
+.trade-pill.custom { background: var(--blue-bg); border-color: #B5D4F4; color: var(--blue-text); }
+.add-trade { display: flex; gap: 6px; margin-top: 4px; }
+.add-trade input { padding: 5px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg2); color: var(--text); outline: none; width: 160px; font-size: 12px; }
+.add-trade input:focus { border-color: var(--blue); }
+
+/* Drop zone */
+.drop-zone { border: 1px dashed var(--border2); border-radius: var(--radius); padding: 14px; text-align: center; color: var(--text3); font-size: 13px; cursor: pointer; background: var(--bg2); margin-bottom: 12px; transition: all 0.12s; }
+.drop-zone:hover { border-color: var(--blue); color: var(--text2); }
+.drop-loaded { border: 0.5px solid #9FE1CB; background: var(--teal-bg); border-radius: var(--radius); padding: 8px 12px; font-size: 12px; color: var(--teal-text); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+
+/* Bottom bar */
+.bottom-bar { display: flex; align-items: center; justify-content: space-between; }
+.val-msg { font-size: 12px; color: var(--red); }
+.ready-hint { font-size: 11px; color: var(--text3); }
+.ready-hint.ready { color: var(--green); }
+
+/* Loading */
+#loading { display: none; text-align: center; padding: 40px; }
+.spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.load-step { font-size: 12px; color: var(--text3); margin-top: 6px; }
+
+/* Results */
+#results { display: none; }
+.metrics-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 14px; }
+.metric { background: var(--bg2); border-radius: var(--radius); padding: 12px 14px; }
+.metric-label { font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.metric-value { font-size: 22px; font-weight: 500; color: var(--text); }
+.metric-sub { font-size: 11px; margin-top: 2px; color: var(--text3); }
+.metric-sub.high { color: var(--red); }
+.metric-sub.low { color: var(--green); }
+
+/* Risk bars */
+.risk-row { margin-bottom: 10px; }
+.risk-label-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+.risk-bar-bg { height: 5px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+.risk-bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+
+/* Table */
+.tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.tbl th { padding: 6px 10px; background: var(--bg2); color: var(--text2); text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid var(--border); }
+.tbl td { padding: 8px 10px; border-bottom: 0.5px solid var(--border); color: var(--text); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: none; }
+.tbl tr:hover td { background: var(--bg2); }
+
+/* Badges */
+.badge { display: inline-flex; align-items: center; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+.badge-high { background: var(--red-bg); color: var(--red-text); }
+.badge-review { background: var(--amber-bg); color: var(--amber-text); }
+.badge-ok { background: var(--green-bg); color: var(--green-text); }
+.badge-info { background: var(--blue-bg); color: var(--blue-text); }
+
+/* Gap items */
+.gap-item { padding: 12px 14px; border-bottom: 0.5px solid var(--border); display: flex; gap: 10px; }
+.gap-item:last-child { border-bottom: none; }
+.gap-dot { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+.gap-dot-high { background: var(--red-bg); color: var(--red-text); }
+.gap-dot-med { background: var(--amber-bg); color: var(--amber-text); }
+.gap-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+.gap-desc { font-size: 12px; color: var(--text2); line-height: 1.5; }
+.gap-impact { font-size: 11px; margin-top: 4px; padding: 2px 7px; background: var(--bg2); border-radius: 4px; display: inline-block; color: var(--text2); }
+
+/* Questions */
+.q-item { padding: 12px 14px; border-bottom: 0.5px solid var(--border); }
+.q-item:last-child { border-bottom: none; }
+.q-cat { font-size: 10px; color: var(--text3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+.q-text { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 4px; }
+.q-reason { font-size: 12px; color: var(--text2); border-left: 2px solid var(--border2); padding-left: 8px; }
+
+/* Email */
+.email-body { background: var(--bg2); border-radius: var(--radius); padding: 14px; font-size: 12px; line-height: 1.7; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+.email-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* Chat */
+#chat-panel { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); margin-top: 14px; overflow: hidden; }
+.chat-header { padding: 10px 14px; border-bottom: 0.5px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--bg2); }
+.chat-dot { width: 7px; height: 7px; border-radius: 50%; background: #639922; }
+.chat-title { font-size: 12px; font-weight: 500; }
+.chat-messages { padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; max-height: 340px; overflow-y: auto; }
+.msg { max-width: 85%; padding: 8px 12px; border-radius: 10px; font-size: 13px; line-height: 1.5; }
+.msg-user { align-self: flex-end; background: var(--blue); color: #E6F1FB; border-radius: 10px 10px 2px 10px; }
+.msg-ai { align-self: flex-start; background: var(--bg2); color: var(--text); border: 0.5px solid var(--border); border-radius: 10px 10px 10px 2px; }
+.chat-suggestions { display: flex; flex-wrap: wrap; gap: 5px; padding: 8px 12px; border-top: 0.5px solid var(--border); }
+.suggestion { padding: 4px 10px; border-radius: 20px; border: 0.5px solid var(--border2); font-size: 11px; color: var(--text2); cursor: pointer; background: var(--bg); }
+.suggestion:hover { background: var(--bg2); color: var(--text); }
+.chat-input-row { display: flex; gap: 6px; padding: 10px 12px; border-top: 0.5px solid var(--border); background: var(--bg2); }
+.chat-input { flex: 1; padding: 7px 10px; border-radius: var(--radius); border: 0.5px solid var(--border2); background: var(--bg); color: var(--text); outline: none; font-size: 13px; }
+.chat-input:focus { border-color: var(--blue); }
+
+/* Info / warn boxes */
+.info-box { background: var(--blue-bg); border-left: 3px solid var(--blue); border-radius: 0 var(--radius) var(--radius) 0; padding: 9px 12px; font-size: 12px; color: var(--blue-text); line-height: 1.5; margin-bottom: 10px; }
+.warn-box { background: var(--amber-bg); border-left: 3px solid #EF9F27; border-radius: 0 var(--radius) var(--radius) 0; padding: 9px 12px; font-size: 12px; color: var(--amber-text); line-height: 1.5; margin-bottom: 10px; }
+
+/* Divider */
+.divider { height: 0.5px; background: var(--border); margin: 12px 0; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="topbar">
+    <div class="logo">SANTÉ <span>· Bid Analysis Portal</span></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <span style="font-size:11px;color:var(--green-text);">Santé EPC Intelligence</span>
+    </div>
+  </div>
+
+  <!-- API Key Setup (hidden - key hardcoded) -->
+  <div id="key-setup" class="card" style="display:none!important;" style="display:none;">
+    <div class="key-title">Anthropic API key</div>
+    <div class="key-desc">Stored in your browser session only — never sent anywhere except directly to api.anthropic.com. Get your key at <strong>console.anthropic.com</strong> → API Keys.</div>
+    <div class="key-row">
+      <input class="key-input" id="api-key-input" type="password" placeholder="sk-ant-api03-..." />
+      <button class="btn btn-primary" onclick="saveKey()">Save key</button>
+    </div>
+    <div class="warn-box" style="margin-top:10px;margin-bottom:0;">
+      This portal must be opened from your SharePoint site (not a local file) for the SharePoint data lookups to work. Upload it to Site Assets and open from there.
+    </div>
+  </div>
+
+  <!-- Intake Form -->
+  <div class="card" id="intake-card">
+    <div class="section-label">Project & subcontractor</div>
+    <div class="intake-grid">
+      <div class="field">
+        <label>Project</label>
+        <div class="combo-wrap">
+          <input class="combo-input" id="proj-input" placeholder="Search or add new project…" autocomplete="off"
+            oninput="filterCombo('proj')" onfocus="openCombo('proj')" onblur="closeCombo('proj',200)" />
+          <span class="combo-arrow">▾</span>
+          <div class="dd" id="proj-dd"></div>
+        </div>
+        <div id="proj-chip"></div>
+      </div>
+      <div class="field">
+        <label>Subcontractor</label>
+        <div class="combo-wrap">
+          <input class="combo-input" id="sub-input" placeholder="Search or add new subcontractor…" autocomplete="off"
+            oninput="filterCombo('sub')" onfocus="openCombo('sub')" onblur="closeCombo('sub',200)" />
+          <span class="combo-arrow">▾</span>
+          <div class="dd" id="sub-dd"></div>
+        </div>
+        <div id="sub-chip"></div>
+      </div>
+      <div class="field">
+        <label>Quote date</label>
+        <input class="combo-input" type="date" id="quote-date" />
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">Trade scope</div>
+    <div class="trade-grid" id="trade-grid"></div>
+    <div class="add-trade">
+      <input id="custom-trade-input" placeholder="Add custom trade…" onkeydown="if(event.key==='Enter')addCustomTrade()" />
+      <button class="btn btn-sm" onclick="addCustomTrade()">+ Add</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="section-label">Quote input</div>
+    <div id="drop-zone" class="drop-zone" onclick="document.getElementById('file-input').click()">
+      Drop PDF / Excel quote here or click to browse
+    </div>
+    <input type="file" id="file-input" style="display:none" accept=".pdf,.xlsx,.xls,.txt,.eml" onchange="handleFile(this)" />
+    <textarea id="quote-text" style="width:100%;padding:8px 10px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:12px;resize:vertical;min-height:80px;outline:none;margin-bottom:12px;" placeholder="Or paste quote text / email body here…"></textarea>
+
+    <div class="bottom-bar">
+      <span class="val-msg" id="val-msg"></span>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <span class="ready-hint" id="ready-hint">Select project, sub and trade to continue</span>
+        <button class="btn btn-primary" onclick="runAnalysis()">Analyze quote →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <div style="font-size:13px;color:var(--text2);">Running bid analysis…</div>
+    <div class="load-step" id="load-step">Connecting to SharePoint DB…</div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+
+    <div class="metrics-row" id="metrics-row"></div>
+
+    <div class="card" id="risk-card">
+      <div class="card-header">
+        <span class="card-title">Risk score breakdown <span id="risk-badge" class="badge"></span></span>
+        <button class="btn btn-sm" onclick="askChat('Walk me through how to negotiate this quote down — what levers do I have?')">Ask Claude to negotiate ↗</button>
+      </div>
+      <div id="risk-bars"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Line-by-line price benchmark <span id="lines-badge" class="badge"></span></span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Line item</th><th>Quoted</th><th>DB avg</th><th>Variance</th><th>Flag</th></tr></thead>
+        <tbody id="lines-body"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Scope gaps <span id="gaps-badge" class="badge"></span></span>
+      </div>
+      <div id="gaps-body"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Questions to send <span id="qs-badge" class="badge"></span></span>
+        <button class="btn btn-sm" onclick="draftEmail()">Draft email ↗</button>
+      </div>
+      <div id="qs-body"></div>
+    </div>
+
+    <div class="card" id="email-card" style="display:none;">
+      <div class="card-header">
+        <span class="card-title">Email draft</span>
+      </div>
+      <div class="email-body" id="email-body"></div>
+      <div class="email-actions">
+        <button class="btn btn-sm" onclick="copyEmail()">Copy to clipboard</button>
+        <button class="btn btn-sm btn-primary" onclick="openOutlook()">Open in Outlook →</button>
+      </div>
+    </div>
+
+    <div id="chat-panel">
+      <div class="chat-header">
+        <div class="chat-dot"></div>
+        <div class="chat-title">Ask follow-up questions about this quote</div>
+      </div>
+      <div class="chat-messages" id="chat-messages">
+        <div class="msg msg-ai" id="chat-intro">Analysis complete. Ask me anything about this quote — comparables, negotiation tactics, scope gaps, or draft communications.</div>
+      </div>
+      <div class="chat-suggestions" id="chat-suggestions">
+        <span class="suggestion" onclick="askChat('What did we pay for this trade on comparable projects?')">Comparable project costs</span>
+        <span class="suggestion" onclick="askChat('How do I negotiate the highest-risk line items down?')">Negotiation tactics</span>
+        <span class="suggestion" onclick="askChat('Are there any red flags about this subcontractor in our DB?')">Sub track record</span>
+        <span class="suggestion" onclick="askChat('What scope items should I make sure are in the contract?')">Contract checklist</span>
+      </div>
+      <div class="chat-input-row">
+        <input class="chat-input" id="chat-input" placeholder="Ask anything about this quote…" onkeydown="if(event.key==='Enter')sendChat()" />
+        <button class="btn btn-sm btn-primary" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SP_SITE = 'https://santegroup365.sharepoint.com/sites/SanteEPCIntelligence';
+const SP_API = `${SP_SITE}/_api/web/lists/getbytitle`;
+
+const PROJECTS = ['Gracy Solar — 4.99 MW (McHenry, IL)','Corfee Solar — 7.51 MW (IL)','Huber — 5.78 MW (IL)','Flat Creek — 49 MW'];
+const SUBS = ['Cole Excavating Services','Midwest Civil Solutions','Illinois Grading LLC','Terrain Works Inc.','Bright Power Electric','SunTrack Installers','Prairie Fence Co.'];
+const TRADES = ['Civil','Electrical','Tracker Installation','Fencing','Geotechnical','Concrete','Commissioning','Mechanical'];
+const customTrades = [];
+const customProjects = [];
+const customSubs = [];
+let selectedTrade = null;
+const sel = { proj: null, sub: null };
+let lastAnalysis = null;
+let chatHistory = [];
+
+// Init
+document.getElementById('quote-date').valueAsDate = new Date();
+buildTradeGrid();
+updateHint();
+
+function checkKey() {
+  const k = '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';
+  if (k) {
+    document.getElementById('key-status').textContent = 'API key set ✓';
+    document.getElementById('key-status').style.color = 'var(--green)';
+  } else {
+    document.getElementById('key-setup').style.display = 'block';
+  }
+}
+function toggleKeyPanel() {
+  const p = document.getElementById('key-setup');
+  p.style.display = p.style.display === 'none' ? 'block' : 'none';
+}
+function saveKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (!k.startsWith('sk-ant')) { alert('That does not look like a valid Anthropic key — it should start with sk-ant'); return; }
+  sessionStorage.setItem('anthropic_key', k);
+  document.getElementById('key-setup').style.display = 'none';
+  }
+
+function buildTradeGrid() {
+  const g = document.getElementById('trade-grid');
+  if (!g) return;
+  g.innerHTML = '';
+  [...TRADES, ...customTrades].forEach((t, i) => {
+    const p = document.createElement('div');
+    p.className = 'trade-pill' + (t === selectedTrade ? ' active' : '') + (i >= TRADES.length ? ' custom' : '');
+    p.textContent = t;
+    p.addEventListener('click', function() { selectedTrade = t; buildTradeGrid(); updateHint(); });
+    g.appendChild(p);
+  });
+  console.log('Trade grid built, selectedTrade:', selectedTrade);
+}
+function addCustomTrade() {
+  const inp = document.getElementById('custom-trade-input');
+  const v = inp.value.trim();
+  if (!v) return;
+  if (!customTrades.includes(v) && !TRADES.includes(v)) {
+    customTrades.push(v);
+  }
+  selectedTrade = v;
+  buildTradeGrid();
+  updateHint();
+  inp.value = '';
+}
+function updateHint() {
+  const missing = [];
+  if (!sel.proj) missing.push('project');
+  if (!sel.sub) missing.push('subcontractor');
+  if (!selectedTrade) missing.push('trade');
+  const hint = document.getElementById('ready-hint');
+  if (hint) {
+    hint.textContent = missing.length ? `Still needed: ${missing.join(', ')}` : 'Ready to analyze';
+    hint.className = 'ready-hint' + (missing.length ? '' : ' ready');
+  }
+  console.log('State — proj:', sel.proj, '| sub:', sel.sub, '| trade:', selectedTrade);
+}
+
+// Combo
+function buildDD(type) {
+  const q = document.getElementById(`${type}-input`).value.toLowerCase();
+  const all = type === 'proj' ? [...PROJECTS,...customProjects] : [...SUBS,...customSubs];
+  const filtered = q ? all.filter(v => v.toLowerCase().includes(q)) : all;
+  const dd = document.getElementById(`${type}-dd`);
+  dd.innerHTML = '';
+  filtered.forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'dd-item';
+    d.textContent = item;
+    d.onmousedown = (e) => { e.preventDefault(); selectCombo(type, item, false); };
+    dd.appendChild(d);
+  });
+  const raw = document.getElementById(`${type}-input`).value.trim();
+  if (raw && !all.some(v => v.toLowerCase() === raw.toLowerCase())) {
+    const d = document.createElement('div');
+    d.className = 'dd-item new';
+    d.textContent = `+ Add "${raw}" as new ${type === 'proj' ? 'project' : 'subcontractor'}`;
+    d.onmousedown = (e) => { e.preventDefault(); selectCombo(type, raw, true); };
+    dd.appendChild(d);
+  }
+}
+function filterCombo(type) { buildDD(type); document.getElementById(`${type}-dd`).classList.add('open'); }
+function openCombo(type) { buildDD(type); document.getElementById(`${type}-dd`).classList.add('open'); }
+function closeCombo(type, delay) { setTimeout(() => document.getElementById(`${type}-dd`).classList.remove('open'), delay); }
+function selectCombo(type, value, isNew) {
+  if (isNew) { if (type === 'proj') customProjects.push(value); else customSubs.push(value); }
+  sel[type] = value;
+  document.getElementById(`${type}-input`).value = value;
+  document.getElementById(`${type}-dd`).classList.remove('open');
+  const chip = document.getElementById(`${type}-chip`);
+  chip.innerHTML = `<span class="chip ${isNew?'isnew':''}">${value}${isNew?' (new)':''} <span class="chip-x" onclick="clearSel('${type}')">×</span></span>`;
+  updateHint();
+}
+function clearSel(type) {
+  sel[type] = null;
+  document.getElementById(`${type}-input`).value = '';
+  document.getElementById(`${type}-chip`).innerHTML = '';
+  updateHint();
+}
+
+// File handling
+function handleFile(inp) {
+  const f = inp.files[0];
+  if (!f) return;
+  document.getElementById('drop-zone').innerHTML = `📄 ${f.name} — loaded`;
+  document.getElementById('drop-zone').style.cssText += 'background:var(--teal-bg);border-color:#9FE1CB;color:var(--teal-text);';
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('quote-text').value = e.target.result; };
+  reader.readAsText(f);
+}
+
+// Main analysis
+async function runAnalysis() {
+  const missing = [];
+  if (!sel.proj) missing.push('project');
+  if (!selectedTrade) missing.push('trade');
+  if (missing.length) {
+    const msg = document.getElementById('val-msg');
+    msg.textContent = 'Please select: ' + missing.join(', ');
+    setTimeout(()=>msg.textContent='',3000);
+    alert('Please select a ' + missing.join(' and ') + ' before analyzing.');
+    return;
+  }
+  if (!sel.sub) sel.sub = document.getElementById('sub-input').value.trim() || 'Unknown Subcontractor';
+  const apiKey = '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';
+  if (!apiKey) { toggleKeyPanel(); return; }
+
+  document.getElementById('results').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  document.getElementById('intake-card').style.opacity = '0.5';
+
+  try {
+    setLoadStep('Querying DB_QUOTES from SharePoint…');
+    const quotes = await spGet('DB_QUOTES', `Trade_x0020_Scope eq '${selectedTrade}'`, 20,
+      'Title,Trade_x0020_Scope,Total_x0020_Quote_x0020_Amount,Dollar_x0020_Per_x0020_Watt,Quote_x0020_Status,Exclusions_x0020_and_x0020_Clarifications,Prevailing_x0020_Wage,Bond_x0020_Included,Scope_x0020_Description');
+
+    setLoadStep('Querying DB_LINEITEMS from SharePoint…');
+    const lines = await spGet('DB_LINEITEMS', `Group eq '${selectedTrade}'`, 50,
+      'Title,Group,Phase,Description,Unit,Total_x0020_Cost,Budget_x0020_Total,Variance_x0020_Pct');
+
+    setLoadStep('Querying DB_VENDORS from SharePoint…');
+    const vendors = await spGet('DB_VENDORS', null, 50,
+      'Title,Vendor_x0020_Type,States_x0020_Covered,Performance_x0020_Rating,Avg_x0020_Bid_x0020_vs_x0020_Actual_x0020_Pct,Projects_x0020_Completed');
+
+    setLoadStep('Calling Claude for analysis…');
+    const quotedTotal = parseFloat(document.getElementById('quote-text').value.match(/\$?([\d,]+)/)?.[1]?.replace(',','') || 0);
+    const quoteText = document.getElementById('quote-text').value;
+
+    const prompt = buildPrompt(quotes, lines, vendors, quoteText);
+    const analysis = await callClaude(apiKey, prompt);
+    lastAnalysis = analysis;
+    chatHistory = [];
+
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('intake-card').style.opacity = '1';
+    renderResults(analysis);
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('results').scrollIntoView({behavior:'smooth'});
+
+  } catch(err) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('intake-card').style.opacity = '1';
+    alert('Error: ' + err.message + '\n\nIf this is a SharePoint connection error, make sure you opened this portal from your SharePoint site (not a local file). If it is an API key error, check your key in Settings.');
+    console.error(err);
+  }
+}
+
+function setLoadStep(msg) { document.getElementById('load-step').textContent = msg; }
+
+async function spGet(listName, filter, top, select) {
+  let url = `${SP_API}('${listName}')/items?$top=${top}`;
+  if (filter) url += `&$filter=${encodeURIComponent(filter)}`;
+  if (select) url += `&$select=${select}`;
+  const res = await fetch(url, {
+    credentials: 'include',
+    headers: { 'Accept': 'application/json;odata=verbose' }
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`SharePoint error on ${listName}: ${res.status} — ${err.substring(0,200)}`);
+  }
+  const data = await res.json();
+  return data.d?.results || [];
+}
+
+function buildPrompt(quotes, lines, vendors, quoteText) {
+  const quoteSummary = quotes.map(q =>
+    `${q.Title} | Trade: ${q.Trade_x0020_Scope} | Total: $${q.Total_x0020_Quote_x0020_Amount} | Status: ${q.Quote_x0020_Status} | Exclusions: ${q.Exclusions_x0020_and_x0020_Clarifications || 'none'}`
+  ).join('\n') || 'No comparable quotes found in DB for this trade.';
+
+  const linesSummary = lines.map(l =>
+    `${l.Description} | Group: ${l.Group} | Total: $${l.Total_x0020_Cost} | Budget: $${l.Budget_x0020_Total} | Variance: ${l.Variance_x0020_Pct}%`
+  ).join('\n') || 'No line items found for this trade.';
+
+  const vendorSummary = vendors.map(v =>
+    `${v.Title} | Type: ${v.Vendor_x0020_Type} | States: ${v.States_x0020_Covered} | Rating: ${v.Performance_x0020_Rating} | Avg vs Actual: ${v.Avg_x0020_Bid_x0020_vs_x0020_Actual_x0020_Pct}%`
+  ).join('\n') || 'No vendor records found.';
+
+  return `You are an expert solar EPC estimator at Santé Renewables LLC in Illinois. Analyze this subcontractor quote against our historical project database.
+
+QUOTE DETAILS:
+Project: ${sel.proj}
+Trade: ${selectedTrade}
+Subcontractor: ${sel.sub}
+Quote Text / Line Items:
+${quoteText || 'No quote text provided — analyze based on trade and DB comparables only.'}
+
+HISTORICAL COMPARABLE QUOTES FROM SANTÉ DB (${quotes.length} found):
+${quoteSummary}
+
+HISTORICAL LINE ITEMS FROM SANTÉ DB (${lines.length} found):
+${linesSummary}
+
+VENDOR RECORDS FROM SANTÉ DB (${vendors.length} found):
+${vendorSummary}
+
+Return ONLY a valid JSON object with NO markdown, NO backticks, NO preamble. Exactly this structure:
+{
+  "riskScore": <integer 0-100, higher means more risk>,
+  "riskReason": "<one sentence>",
+  "priceVsDb": "<e.g. +18% above DB avg or Within DB range>",
+  "dbRange": "<e.g. $0.052-$0.071/Wac or Insufficient DB data>",
+  "riskBreakdown": [
+    {"label": "Price vs. historical range", "score": <0-40>, "max": 40, "color": "red|amber|green"},
+    {"label": "Scope completeness", "score": <0-30>, "max": 30, "color": "red|amber|green"},
+    {"label": "Vendor track record", "score": <0-30>, "max": 30, "color": "red|amber|green"}
+  ],
+  "lineItems": [{"item": "<name>", "quoted": "<$amount>", "dbAvg": "<$amount or N/A>", "variance": "<+X% or -X% or N/A>", "flag": "high|review|ok"}],
+  "scopeGaps": [{"title": "<short title>", "description": "<2-3 sentences>", "pricingImpact": "<$X-$Y range>", "severity": "high|medium"}],
+  "questions": [{"question": "<full question to ask sub>", "reason": "<why this matters>", "category": "price|scope|risk"}],
+  "emailDraft": "<complete professional email to subcontractor asking all clarification questions>"
+}`;
+}
+
+async function callClaude(apiKey, prompt) {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+  if (!res.ok) { const e = await res.json(); throw new Error('Anthropic API: ' + (e.error?.message || res.status)); }
+  const data = await res.json();
+  const raw = data.content[0].text.replace(/```json|```/g,'').trim();
+  return JSON.parse(raw);
+}
+
+function renderResults(a) {
+  // Metrics
+  document.getElementById('metrics-row').innerHTML = `
+    <div class="metric"><div class="metric-label">Risk score</div><div class="metric-value" style="color:${a.riskScore>60?'var(--red)':a.riskScore>35?'var(--amber)':'var(--green)'}">${a.riskScore}/100</div><div class="metric-sub ${a.riskScore>60?'high':''}">${a.riskScore>60?'High — review before award':a.riskScore>35?'Medium':'Low risk'}</div></div>
+    <div class="metric"><div class="metric-label">Price vs DB</div><div class="metric-value" style="font-size:15px;margin-top:4px;">${a.priceVsDb}</div><div class="metric-sub">${a.dbRange}</div></div>
+    <div class="metric"><div class="metric-label">Scope gaps</div><div class="metric-value">${a.scopeGaps?.length||0}</div><div class="metric-sub ${(a.scopeGaps||[]).filter(g=>g.severity==='high').length>0?'high':''}">${(a.scopeGaps||[]).filter(g=>g.severity==='high').length} high-impact</div></div>
+    <div class="metric"><div class="metric-label">Questions</div><div class="metric-value">${a.questions?.length||0}</div><div class="metric-sub">Generated</div></div>`;
+
+  // Risk badge
+  const rb = document.getElementById('risk-badge');
+  rb.textContent = a.riskScore>60?'High':a.riskScore>35?'Medium':'Low';
+  rb.className = 'badge ' + (a.riskScore>60?'badge-high':a.riskScore>35?'badge-review':'badge-ok');
+
+  // Risk bars
+  document.getElementById('risk-bars').innerHTML = (a.riskBreakdown||[]).map(r => `
+    <div class="risk-row">
+      <div class="risk-label-row"><span style="color:var(--text2);font-size:12px;">${r.label}</span><span style="font-weight:500;font-size:12px;color:${r.color==='red'?'var(--red)':r.color==='amber'?'var(--amber)':'var(--green)'}">${r.score} / ${r.max}</span></div>
+      <div class="risk-bar-bg"><div class="risk-bar-fill" style="width:${Math.round(r.score/r.max*100)}%;background:${r.color==='red'?'#E24B4A':r.color==='amber'?'#EF9F27':'#639922'};"></div></div>
+    </div>`).join('');
+
+  // Line items
+  const highLines = (a.lineItems||[]).filter(l=>l.flag==='high').length;
+  document.getElementById('lines-badge').textContent = `${highLines} above range`;
+  document.getElementById('lines-badge').className = 'badge ' + (highLines>0?'badge-high':'badge-ok');
+  document.getElementById('lines-body').innerHTML = (a.lineItems||[]).map(function(l) {
+    var col = l.flag==='high'?'var(--red)':l.flag==='review'?'var(--amber)':'var(--green)';
+    var badgeCls = l.flag==='ok'?'badge-ok':l.flag==='review'?'badge-review':'badge-high';
+    var badgeTxt = l.flag==='ok'?'OK':l.flag==='review'?'Review':'High';
+    return '<tr><td>'+l.item+'</td><td>'+l.quoted+'</td><td style="color:var(--text2)">'+l.dbAvg+'</td><td style="color:'+col+';font-weight:500">'+l.variance+'</td><td><span class="badge '+badgeCls+'">'+badgeTxt+'</span></td></tr>';
+  }).join('');
+
+  // Scope gaps
+  const highGaps = (a.scopeGaps||[]).filter(g=>g.severity==='high').length;
+  document.getElementById('gaps-badge').textContent = `${a.scopeGaps?.length||0} found`;
+  document.getElementById('gaps-badge').className = 'badge ' + (highGaps>0?'badge-high':'badge-review');
+  document.getElementById('gaps-body').innerHTML = (a.scopeGaps||[]).map(g => `
+    <div class="gap-item">
+      <div class="gap-dot gap-dot-${g.severity==='high'?'high':'med'}">${g.severity==='high'?'!':'?'}</div>
+      <div><div class="gap-title">${g.title}</div><div class="gap-desc">${g.description}</div><span class="gap-impact">Pricing impact: ${g.pricingImpact}</span></div>
+    </div>`).join('');
+
+  // Questions
+  document.getElementById('qs-badge').textContent = `${a.questions?.length||0} generated`;
+  document.getElementById('qs-badge').className = 'badge badge-info';
+  document.getElementById('qs-body').innerHTML = (a.questions||[]).map((q,i) => `
+    <div class="q-item">
+      <div class="q-cat">Q${i+1} · ${q.category}</div>
+      <div class="q-text">${q.question}</div>
+      <div class="q-reason">${q.reason}</div>
+      <button class="btn btn-sm" style="margin-top:6px;" onclick="copyText(this,'${q.question.replace(/'/g,"\\'")}')">Copy</button>
+    </div>`).join('');
+
+  // Email
+  if (a.emailDraft) {
+    document.getElementById('email-body').textContent = a.emailDraft;
+    document.getElementById('email-card').style.display = 'block';
+  }
+
+  // Chat intro
+  document.getElementById('chat-intro').textContent = `Analysis complete for ${sel.sub} on ${sel.proj} (${selectedTrade}). Risk score: ${a.riskScore}/100. ${a.scopeGaps?.length||0} scope gaps found. Ask me anything about this quote.`;
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => { btn.textContent = 'Copied!'; setTimeout(()=>btn.textContent='Copy',1500); });
+}
+function copyEmail() {
+  const text = document.getElementById('email-body').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('Email copied to clipboard'));
+}
+function openOutlook() {
+  const text = encodeURIComponent(document.getElementById('email-body').textContent);
+  window.open(`mailto:?body=${text}`);
+}
+function draftEmail() {
+  document.getElementById('email-card').style.display = 'block';
+  document.getElementById('email-card').scrollIntoView({behavior:'smooth'});
+}
+
+// Chat
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+  await askChat(msg);
+}
+
+async function askChat(msg) {
+  const apiKey = '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';
+  appendMsg(msg, 'user');
+  const typing = appendMsg('…', 'ai');
+
+  chatHistory.push({ role: 'user', content: msg });
+
+  const systemContext = lastAnalysis ? `You are an expert solar EPC estimator at Santé Renewables LLC. You just analyzed a subcontractor quote with these results: ${JSON.stringify(lastAnalysis)}. Project: ${sel.proj}, Trade: ${selectedTrade}, Sub: ${sel.sub}. Answer questions concisely and practically — you are talking to an estimator, not an executive.` : 'You are an expert solar EPC estimator at Santé Renewables.';
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:1000, system: systemContext, messages: chatHistory })
+    });
+    const data = await res.json();
+    const reply = data.content[0].text;
+    chatHistory.push({ role: 'assistant', content: reply });
+    typing.textContent = reply;
+  } catch(err) {
+    typing.textContent = 'Error: ' + err.message;
+  }
+}
+
+function appendMsg(text, type) {
+  const msgs = document.getElementById('chat-messages');
+  const d = document.createElement('div');
+  d.className = `msg msg-${type}`;
+  d.textContent = text;
+  msgs.appendChild(d);
+  msgs.scrollTop = msgs.scrollHeight;
+  return d;
+}
+</script>
+</body>
+</html>
